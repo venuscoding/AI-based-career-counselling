@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BardAPI Search</title>
+    <style>
+        /* Your existing CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            background-image: url('https://cdn.wallpapersafari.com/20/58/YUwiqB.jpg');
+            background-size: cover;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 50px;
+            color: white;
+            padding: 20px;
+            margin-bottom: 5px;
+        }
+
+        form {
+            text-align: center;
+            margin: 0px auto;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.116);
+            background-image: url('car.jpg');
+        
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 25px;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button[type="submit"] {
+            background-color: blue;
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-right: 5px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #text_to_speech_button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+    
+        }
+
+        #text_to_speech_image {
+            height: 25px;
+            width: 25px;
+            position: relative;
+            top: 7px;
+        }
+
+        hr {
+            margin: 20px auto;
+            max-width: 400px;
+            border: 1px solid #ccc;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 2.5em;
+            color: white;
+            margin-bottom: 10px;
+
+        }
+
+        .search-result-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 0 250px; /* Add margin for spacing */
+            background-image: url('https://img.freepik.com/free-photo/perspective-exterior-nobody-empty-box_1258-260.jpg');
+            
+        }
+
+        p#search_result {
+            font-size: 1.2em;
+            margin-left: 30px; /* Adjust left margin for bullet points */
+        }
+
+        #microphone_button {
+            position: relative;
+            top: 5px;
+        }
+
+        #microphone_image {
+            height: 25px;
+            width: 25px;
+            position: relative;
+            top: 2px;
+        }
+        #text_to_speech_button, #microphone_button {
+    background-color: transparent; /* Set background to transparent */
+    border: none; /* Remove border */
+    cursor: pointer;
+    padding: 0;
+    }
+        #stop_button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        #stop_image{
+            height: 28px;
+            width: 30px;
+            position: relative;
+            top: 8px;
+        }
+
+        
+        
+    </style>
+</head>
+<body>
+    <h1>Career Counselling</h1>
+    <form method="POST" action="/api/search">
+        <label for="search_query">Search Query</label>
+        <input type="text" id="search_query" name="search_query" required>
+        <button type="button" id="microphone_button">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3oi1jEbv4AP9lZgr4NiM39RaaPNSvInVhKPikltMVALyYSWTobcYZ7zNV1VkedwjKaj8&usqp=CAU" alt="Microphone" id="microphone_image">
+        </button>
+        <button type="submit" id="search_button">Search</button>
+        <button type="button" id="text_to_speech_button">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQl2tixICHAmLewV9UAwJNmUI4rjHmgfdyfCA&usqp=CAU" alt="Speaker" id="text_to_speech_image">
+        </button>
+        <button type="button" id="stop_button">
+            <img src="https://cdn-icons-png.flaticon.com/512/6481/6481611.png" alt="Mute" id="stop_image">
+        </button>
+    </form>
+    <hr>
+    <h2>Result</h2>
+    <div class="search-result-box">
+        <p id="search_result"></p>
+    </div>
+
+    <script>
+        let textToSpeechSynth = window.speechSynthesis;
+        let textToSpeechUtterance = null;
+        const cache = {}; // Client-side cache for API responses
+
+        document.querySelector("form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const searchQuery = document.getElementById("search_query").value;
+            const cachedResponse = cache[searchQuery];
+
+            // Display loading spinner while fetching data
+
+            if (cachedResponse) {
+                displaySearchResults(cachedResponse);
+            } else {
+                const response = await fetch("/api/search", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ search_query: searchQuery }),
+                });
+                const data = await response.json();
+                cache[searchQuery] = data.answer; // Store the response in cache
+                displaySearchResults(data.answer);
+            }
+            
+        });
+        function startSpeechRecognition() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+
+            recognition.lang = "en-US"; // Set the language to English
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                const speechResult = event.results[0][0].transcript;
+                document.getElementById("search_query").value = speechResult;
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Speech recognition error:", event.error);
+            };
+        }
+
+        // Add an event listener to the microphone button
+        document.getElementById("microphone_button").addEventListener("click", startSpeechRecognition);
+
+        // Rest of your JavaScript code for microphone and text-to-speech buttons
+        // ...
+        function speakSearchResult() {
+            const searchResult = document.getElementById("search_result").textContent;
+
+            if (textToSpeechUtterance) {
+                textToSpeechSynth.cancel();
+            }
+
+            // Split the search result into smaller chunks (e.g., sentences)
+            const sentences = searchResult.split(/[.!?]/);
+
+            // Function to recursively speak each sentence
+            function speakSentence(index) {
+                if (index >= sentences.length) {
+                    return; // All sentences have been spoken
+                }
+
+                textToSpeechUtterance = new SpeechSynthesisUtterance(sentences[index].trim());
+                textToSpeechUtterance.lang = "en-US"; // Set the language to English
+                textToSpeechSynth.speak(textToSpeechUtterance);
+
+                textToSpeechUtterance.onend = function() {
+                    // Continue to the next sentence
+                    speakSentence(index + 1);
+                };
+            }
+
+            // Start speaking the sentences
+            speakSentence(0);
+        }
+
+        // Add an event listener to the text to speech button
+        document.getElementById("text_to_speech_button").addEventListener("click", speakSearchResult);
+
+        // Function to display search results (unchanged)
+        function displaySearchResults(results) {
+            const searchResultContainer = document.getElementById("search_result");
+            searchResultContainer.innerHTML = "";
+
+            const resultArray = results.split("\n"); // Assuming each result is on a new line
+
+            resultArray.forEach(result => {
+                // Replace "**Bold Text**" with <strong>Bold Text</strong>
+                result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                // Replace "__Italic Text__" with <em>Italic Text</em>
+                result = result.replace(/__(.*?)__/g, '<em>$1</em>');
+
+                // Shorten and improve formatting of bullet points
+                result = result.replace(/^\*\s*/, '- '); // Replace "*" with "- "
+
+                if (result.trim() !== "") {
+                    const listItem = document.createElement("li");
+                    listItem.innerHTML = result;
+                    // Set text alignment to justify
+                    listItem.style.textAlign = "justify";
+                    searchResultContainer.appendChild(listItem);
+                }
+            });
+        }
+        function stopSpeechSynthesis() {
+            if (textToSpeechUtterance) {
+                textToSpeechSynth.cancel();
+            }
+        }
+
+        // Add an event listener to the stop button
+        document.getElementById("stop_button").addEventListener("click", stopSpeechSynthesis);
+    </script>
+</body>
+</html>
